@@ -34,3 +34,9 @@ output "nat_gateway_ids" {
 output "nat_gateway_elastic_ips" {
   value = ""
 }
+output "nginx_alb_dns_name" {
+  value = module.nginx_alb.alb_dns_name
+}
+output "app_alb_dns_name" {
+  value = module.app_alb.alb_dns_name
+}

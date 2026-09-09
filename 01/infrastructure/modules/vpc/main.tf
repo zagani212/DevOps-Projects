@@ -1,5 +1,7 @@
 resource "aws_vpc" "main" {
   cidr_block = var.vpc_cidr
+  enable_dns_support   = true
+  enable_dns_hostnames = true
 }
 
 resource "aws_subnet" "public" {
@@ -27,6 +29,15 @@ resource "aws_subnet" "private" {
   }
 }
 
+resource "aws_db_subnet_group" "default" {
+  name       = "private"
+  subnet_ids = aws_subnet.private[*].id
+
+  tags = {
+    Name = "My DB subnet group"
+  }
+}
+
 resource "aws_internet_gateway" "gw" {
   vpc_id = aws_vpc.main.id
 
@@ -40,9 +51,9 @@ resource "aws_eip" "nat" {
 }
 
 resource "aws_nat_gateway" "nat" {
-  count = length(aws_subnet.private)
+  count = length(aws_subnet.public)
   allocation_id = aws_eip.nat[count.index].id
-  subnet_id     = aws_subnet.private[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
 
   tags = {
     Name = "gw NAT"
@@ -66,12 +77,12 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table" "private" {
-  count = length(aws_nat_gateway.nat)
+  count = length(aws_subnet.private)
   vpc_id = aws_vpc.main.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat[count.index].id
+    nat_gateway_id = aws_nat_gateway.nat[count.index % length(aws_nat_gateway.nat)].id
   }
 
   tags = {

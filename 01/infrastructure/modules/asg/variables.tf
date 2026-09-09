@@ -16,3 +16,11 @@ variable "name" {
 variable "script_name" {
   type = string
 }
+variable "iam_instance_profile" {
+  type = string
+  default = null
+}
+variable "app_lb_dns_name" {
+  type = string
+  default = "TEST"
+}
