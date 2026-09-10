@@ -27,19 +27,11 @@ module "sg" {
 module "bastion" {
   source = "./modules/computing"
   ami           = var.ami
+  name = "bastion"
   instance_type = var.instance_type
   key_name = module.key.key_name
   sg = module.sg.bastion_sg
   subnet_id = module.bastion_vpc.public_subnet[0].id
-}
-
-module "app" {
-  source = "./modules/computing"
-  ami           = var.ami
-  instance_type = var.instance_type
-  key_name = module.key.key_name
-  sg = module.sg.app_sg
-  subnet_id = module.app_vpc.private_subnet[0].id
 }
 
 
@@ -53,4 +45,24 @@ module "transit_gateway" {
   subnet_b = module.app_vpc.private_subnet[*].id
   rt_a = module.bastion_vpc.public_rt[*].id
   rt_b = module.app_vpc.private_rt[*].id
+}
+
+module "asg" {
+  source = "./modules/asg"
+  ami = var.ami
+  instance_type = var.instance_type
+  key_name = module.key.key_name
+  sg = module.sg.app_sg
+  script_name = "script.sh"
+  subnet_ids = module.app_vpc.private_subnet[*].id
+  tg = module.alb.target_group
+}
+
+module "alb" {
+  source = "./modules/alb"
+  name = "app-alb"
+  internal = false
+  sg = module.sg.alb_sg
+  subnet = module.app_vpc.public_subnet[*].id
+  vpc_id = module.app_vpc.vpc_id
 }
